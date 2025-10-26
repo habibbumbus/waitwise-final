@@ -6,12 +6,20 @@ from sqlalchemy.orm import Session
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+import os
 
-DATABASE_URL = "sqlite:///./waitwise.db"
+# Read database URL from environment with a sensible local default for dev.
+# For production/staging set DATABASE_URL to a Postgres (or other) connection string.
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./waitwise.db")
 
-engine = create_engine(
-    DATABASE_URL, connect_args={"check_same_thread": False}, future=True, echo=False
-)
+# SQLite requires a special connect arg for the same-thread check.
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL, connect_args={"check_same_thread": False}, future=True, echo=False
+    )
+else:
+    engine = create_engine(DATABASE_URL, future=True, echo=False)
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, future=True)
 
 

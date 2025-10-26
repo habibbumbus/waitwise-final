@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { supabase } from '../lib/supabase';
+import { useState } from 'react';
+import { registerUser } from '../lib/api';
 import { UserPlus } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 
@@ -26,22 +26,13 @@ export function RegisterPage({ onRegister, onBack }: RegisterPageProps) {
     setError('');
 
     try {
-      const { data, error: insertError } = await supabase
-        .from('users')
-        .insert({
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
-          id_type: formData.idType,
-          urgency_level: 'low',
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-      if (data) {
-        onRegister(data);
-      }
+      const data = await registerUser({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        id_type: formData.idType,
+      });
+      if (data) onRegister(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to register');
     } finally {

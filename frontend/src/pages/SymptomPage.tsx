@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { ClipboardList, AlertCircle, CheckCircle } from 'lucide-react';
 import { classifySymptoms, getUrgencyColor, getUrgencyLabel } from '../lib/triage';
 import type { UrgencyLevel } from '../lib/triage';

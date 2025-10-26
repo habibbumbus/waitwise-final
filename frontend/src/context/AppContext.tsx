@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+/*
+  This file intentionally exports a context and a hook. The react-refresh rule
+  (`react-refresh/only-export-components`) warns when files export non-component
+  values because Fast Refresh works best when files only export components.
+  It's safe here to disable that rule for this file.
+*/
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState } from 'react';
+import type { ReactNode } from 'react';
 import type { Database } from '../lib/database.types';
 
 type User = Database['public']['Tables']['users']['Row'];

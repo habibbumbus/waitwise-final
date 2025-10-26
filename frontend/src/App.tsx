@@ -7,7 +7,7 @@ import { ClinicDiscoveryPage } from './pages/ClinicDiscoveryPage';
 import { BookingPage } from './pages/BookingPage';
 import { QueuePage } from './pages/QueuePage';
 import { PostVisitPage } from './pages/PostVisitPage';
-import { supabase } from './lib/supabase';
+import { triage } from './lib/api';
 import type { UrgencyLevel } from './lib/triage';
 
 type Page = 'landing' | 'register' | 'symptoms' | 'clinics' | 'booking' | 'queue' | 'post-visit';
@@ -36,13 +36,17 @@ function AppContent() {
 
   const handleSymptomsComplete = async (symptomText: string, urgency: UrgencyLevel) => {
     setSymptoms(symptomText);
-    if (currentUser) {
-      await supabase
-        .from('users')
-        .update({ urgency_level: urgency })
-        .eq('id', currentUser.id);
-      setCurrentUser({ ...currentUser, urgency_level: urgency });
-    }
+      if (currentUser) {
+        // use provided urgency immediately for a snappy UI update
+        setCurrentUser({ ...currentUser, urgency_level: urgency });
+        try {
+          const res = await triage({ user_id: Number(currentUser.id), symptoms: symptomText });
+          setCurrentUser({ ...currentUser, urgency_level: res.urgency_level });
+        } catch (err) {
+          // fallback: keep local state
+          console.error('Triage error', err);
+        }
+      }
     setCurrentPage('clinics');
   };
 

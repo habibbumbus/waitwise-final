@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Clock, Users, Navigation } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { getClinics } from '../lib/api';
 import type { Database } from '../lib/database.types';
 
 type Clinic = Database['public']['Tables']['clinics']['Row'];
@@ -41,12 +41,7 @@ export function ClinicDiscoveryPage({ onSelectClinic, onBack }: ClinicDiscoveryP
 
   const loadClinics = async () => {
     try {
-      const { data, error } = await supabase
-        .from('clinics')
-        .select('*')
-        .order('current_wait', { ascending: true });
-
-      if (error) throw error;
+      const data = await getClinics();
       setClinics(data || []);
     } catch (err) {
       console.error('Error loading clinics:', err);

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Clock, MapPin, Bell, FileText } from 'lucide-react';
 
 interface LandingPageProps {

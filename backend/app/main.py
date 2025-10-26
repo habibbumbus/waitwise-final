@@ -176,3 +176,35 @@ def generate_report(payload: ReportRequest, session: Session = Depends(get_db)) 
         filename=f"waitwise-summary-{appointment.id}.pdf",
         pdf_base64=pdf_base64,
     )
+
+
+@app.get("/appointments/{appointment_id}")
+def get_appointment(appointment_id: int, session: Session = Depends(get_db)) -> dict:
+    appointment = session.get(Appointment, appointment_id)
+    if not appointment:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    # include user and clinic basic info for frontend convenience
+    user = appointment.user
+    clinic = appointment.clinic
+
+    return {
+        "id": appointment.id,
+        "position": appointment.position,
+        "status": appointment.status,
+        "created_at": appointment.created_at.isoformat(),
+        "user": {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+            "urgency_level": user.urgency_level,
+        },
+        "clinic": {
+            "id": clinic.id,
+            "name": clinic.name,
+            "address": clinic.address,
+            "current_wait": clinic.current_wait,
+            "capacity": clinic.capacity,
+        },
+    }

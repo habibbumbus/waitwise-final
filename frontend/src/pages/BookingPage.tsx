@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Calendar, Clock, MapPin, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { bookAppointment, getAppointment } from '../lib/api';
 import type { Database } from '../lib/database.types';
 
 type User = Database['public']['Tables']['users']['Row'];
@@ -25,45 +25,30 @@ export function BookingPage({ user, clinic, symptoms, onBookingComplete, onBack 
     setError('');
 
     try {
-      const { data: existingAppointments, error: countError } = await supabase
-        .from('appointments')
-        .select('position')
-        .eq('clinic_id', clinic.id)
-        .eq('status', 'queued')
-        .order('position', { ascending: false })
-        .limit(1);
-
-      if (countError) throw countError;
-
-      const nextPosition = existingAppointments && existingAppointments.length > 0
-        ? existingAppointments[0].position + 1
-        : 1;
-
-      const { data: appointment, error: insertError } = await supabase
-        .from('appointments')
-        .insert({
-          user_id: user.id,
-          clinic_id: clinic.id,
-          position: nextPosition,
-          symptoms: symptoms,
-          status: 'queued',
-        })
-        .select()
-        .single();
-
-      if (insertError) throw insertError;
-
-      await supabase
-        .from('clinics')
-        .update({ active_patients: clinic.active_patients + 1 })
-        .eq('id', clinic.id);
-
-      setShowConfirmation(true);
-      setTimeout(() => {
-        if (appointment) {
-          onBookingComplete(appointment);
+      try {
+  const res = await bookAppointment(Number(user.id), Number(clinic.id));
+        setShowConfirmation(true);
+        // try to fetch the created appointment from backend
+        if (res && res.appointment_id) {
+          const appointment = await getAppointment(res.appointment_id);
+          setTimeout(() => {
+            if (appointment) onBookingComplete(appointment as any);
+          }, 1200);
+        } else {
+          // fallback: build a minimal appointment object
+          const appointment = {
+            id: res.appointment_id,
+            position: res.position,
+            status: res.status,
+            created_at: new Date().toISOString(),
+            user_id: user.id,
+            clinic_id: clinic.id,
+          };
+          setTimeout(() => onBookingComplete(appointment as any), 1200);
         }
-      }, 2000);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to book appointment');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to book appointment');
     } finally {

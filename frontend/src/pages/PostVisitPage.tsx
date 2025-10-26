@@ -1,4 +1,4 @@
-import React from 'react';
+import { } from 'react';
 import { FileText, Download, Mail, CheckCircle, Home } from 'lucide-react';
 import type { Database } from '../lib/database.types';
 

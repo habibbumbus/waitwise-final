@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Users, Clock, Bell, X, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect, useCallback } from 'react';
+import { Users, Bell, X, CheckCircle } from 'lucide-react';
+import { getAppointment, cancelAppointment } from '../lib/api';
 import type { Database } from '../lib/database.types';
 
 type User = Database['public']['Tables']['users']['Row'];
@@ -21,29 +21,18 @@ export function QueuePage({ user, clinic, appointment: initialAppointment, onCom
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [estimatedWait, setEstimatedWait] = useState(0);
 
-  useEffect(() => {
-    loadAppointmentData();
-    const interval = setInterval(loadAppointmentData, 5000);
-    return () => clearInterval(interval);
-  }, [appointment.id]);
-
-  const loadAppointmentData = async () => {
+  // loadAppointmentData is memoized so it can be safely used as an effect dependency
+  const loadAppointmentData = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('id', appointment.id)
-        .single();
-
-      if (error) throw error;
+      const data = await getAppointment(Number(appointment.id));
       if (data) {
-        setAppointment(data);
+        setAppointment(data as any);
 
-        if (data.position <= 2 && data.status === 'queued') {
+        if ((data as any).position <= 2 && (data as any).status === 'queued') {
           setShowNotification(true);
         }
 
-        if (data.status === 'completed') {
+        if ((data as any).status === 'completed') {
           setTimeout(() => {
             onComplete();
           }, 2000);
@@ -52,7 +41,13 @@ export function QueuePage({ user, clinic, appointment: initialAppointment, onCom
     } catch (err) {
       console.error('Error loading appointment:', err);
     }
-  };
+  }, [appointment.id, onComplete]);
+
+  useEffect(() => {
+    loadAppointmentData();
+    const interval = setInterval(loadAppointmentData, 5000);
+    return () => clearInterval(interval);
+  }, [loadAppointmentData]);
 
   useEffect(() => {
     const avgTimePerPatient = 15;
@@ -61,33 +56,7 @@ export function QueuePage({ user, clinic, appointment: initialAppointment, onCom
 
   const handleCancel = async () => {
     try {
-      await supabase
-        .from('appointments')
-        .update({ status: 'cancelled' })
-        .eq('id', appointment.id);
-
-      await supabase
-        .from('clinics')
-        .update({ active_patients: Math.max(0, clinic.active_patients - 1) })
-        .eq('id', clinic.id);
-
-      const { data: queuedAppointments } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('clinic_id', clinic.id)
-        .eq('status', 'queued')
-        .gt('position', appointment.position)
-        .order('position', { ascending: true });
-
-      if (queuedAppointments && queuedAppointments.length > 0) {
-        for (const appt of queuedAppointments) {
-          await supabase
-            .from('appointments')
-            .update({ position: appt.position - 1 })
-            .eq('id', appt.id);
-        }
-      }
-
+  await cancelAppointment(Number(appointment.id));
       onCancel();
     } catch (err) {
       console.error('Error cancelling appointment:', err);

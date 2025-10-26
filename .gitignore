@@ -1,0 +1,27 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+env/
+.venv/
+
+# Backend runtime
+backend/.venv/
+backend/waitwise.db
+backend/uvicorn.log
+
+# Node
+node_modules/
+dist/
+build/
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
